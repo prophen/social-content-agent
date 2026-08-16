@@ -56,6 +56,7 @@ export async function createDraft(
       content,
       status: "draft",
       approved_at: null,
+      owner_id: ownerId,
     })
     .select()
     .single();
