@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDraftById, updateDraft } from "@/lib/drafts";
+import { createClient } from "@/lib/supabase/server";
 
 type RouteContext = {
   params: Promise<{
@@ -8,6 +9,17 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, { params }: RouteContext) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to create drafts." },
+      { status: 401 },
+    );
+  }
   try {
     const { id } = await params;
     const draft = await getDraftById(id);
@@ -31,6 +43,17 @@ export async function GET(_request: Request, { params }: RouteContext) {
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to create drafts." },
+      { status: 401 },
+    );
+  }
   try {
     const { id } = await params;
     const body = await request.json();

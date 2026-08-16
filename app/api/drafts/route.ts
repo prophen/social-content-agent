@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import { createDraft, getDrafts } from "@/lib/drafts";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to create drafts." },
+      { status: 401 },
+    );
+  }
   try {
     const drafts = await getDrafts();
 
@@ -32,8 +44,18 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    const draft = await createDraft(topic, content);
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to create drafts." },
+        { status: 401 },
+      );
+    }
+    const draft = await createDraft(topic, content, user.id);
 
     return NextResponse.json({ draft }, { status: 201 });
   } catch (error) {

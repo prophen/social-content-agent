@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
@@ -12,6 +12,7 @@ export type Draft = {
   approvedAt: string | null;
   scheduledFor: string | null;
   publishedAt: string | null;
+  ownerId: string;
 };
 
 type DraftRow = {
@@ -24,6 +25,7 @@ type DraftRow = {
   approved_at: string | null;
   scheduled_for: string | null;
   published_at: string | null;
+  owner_id: string;
 };
 
 function toDraft(row: DraftRow): Draft {
@@ -37,13 +39,16 @@ function toDraft(row: DraftRow): Draft {
     approvedAt: row.approved_at,
     scheduledFor: row.scheduled_for,
     publishedAt: row.published_at,
+    ownerId: row.owner_id,
   };
 }
 
 export async function createDraft(
   topic: string,
   content: string,
+  ownerId: string,
 ): Promise<Draft> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("drafts")
     .insert({
@@ -63,6 +68,7 @@ export async function createDraft(
 }
 
 export async function getDrafts(): Promise<Draft[]> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("drafts")
     .select("*")
@@ -76,6 +82,7 @@ export async function getDrafts(): Promise<Draft[]> {
 }
 
 export async function getDraftById(id: string): Promise<Draft | undefined> {
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("drafts")
     .select("*")
@@ -97,6 +104,7 @@ export async function updateDraft(
     scheduledFor?: string;
   },
 ): Promise<Draft | undefined> {
+  const supabase = await createClient();
   const existingDraft = await getDraftById(id);
 
   if (!existingDraft) {
@@ -194,6 +202,7 @@ export async function updateDraft(
   return toDraft(data as DraftRow);
 }
 export async function publishDueDrafts(): Promise<Draft[]> {
+  const supabase = await createClient();
   const now = new Date().toISOString();
 
   const { data: dueRows, error: findError } = await supabase
