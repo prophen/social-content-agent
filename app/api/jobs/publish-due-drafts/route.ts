@@ -3,7 +3,7 @@ import { publishDueDrafts } from "@/lib/drafts";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function runPublisherJob(request: Request) {
   const expectedSecret = process.env.CRON_SECRET;
   const authorization = request.headers.get("authorization");
 
@@ -40,4 +40,16 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+}
+
+/*
+  Vercel Cron invokes the configured path using GET.
+  POST remains useful for your local/manual PowerShell test.
+*/
+export async function GET(request: Request) {
+  return runPublisherJob(request);
+}
+
+export async function POST(request: Request) {
+  return runPublisherJob(request);
 }
