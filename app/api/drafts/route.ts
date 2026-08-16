@@ -2,19 +2,32 @@ import { NextResponse } from "next/server";
 import { createDraft, getDrafts } from "@/lib/drafts";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET() {
+async function requireUser() {
   const supabase = await createClient();
+
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json(
-      { error: "You must be signed in to create drafts." },
-      { status: 401 },
-    );
+  if (error || !user) {
+    return null;
   }
+
+  return user;
+}
+
+export async function GET() {
   try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to view drafts." },
+        { status: 401 },
+      );
+    }
+
     const drafts = await getDrafts();
 
     return NextResponse.json({ drafts });
@@ -22,10 +35,7 @@ export async function GET() {
     console.error("Could not load drafts:", error);
 
     return NextResponse.json(
-      {
-        error: "Could not load drafts.",
-        detail: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Could not load drafts." },
       { status: 500 },
     );
   }
@@ -33,6 +43,15 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to create drafts." },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
 
     const topic = typeof body.topic === "string" ? body.topic.trim() : "";
@@ -44,17 +63,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "You must be signed in to create drafts." },
-        { status: 401 },
-      );
-    }
     const draft = await createDraft(topic, content, user.id);
 
     return NextResponse.json({ draft }, { status: 201 });

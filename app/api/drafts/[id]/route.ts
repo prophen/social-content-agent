@@ -8,19 +8,32 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, { params }: RouteContext) {
+async function requireUser() {
   const supabase = await createClient();
+
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json(
-      { error: "You must be signed in to create drafts." },
-      { status: 401 },
-    );
+  if (error || !user) {
+    return null;
   }
+
+  return user;
+}
+
+export async function GET(_request: Request, { params }: RouteContext) {
   try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to view this draft." },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
     const draft = await getDraftById(id);
 
@@ -33,28 +46,23 @@ export async function GET(_request: Request, { params }: RouteContext) {
     console.error("Could not load draft:", error);
 
     return NextResponse.json(
-      {
-        error: "Could not load the draft.",
-        detail: error instanceof Error ? error.message : "Unknown error",
-      },
+      { error: "Could not load the draft." },
       { status: 500 },
     );
   }
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json(
-      { error: "You must be signed in to create drafts." },
-      { status: 401 },
-    );
-  }
   try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to update drafts." },
+        { status: 401 },
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
 
