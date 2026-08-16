@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/jobs/publish-due-drafts",
+      "schedule": "0 17 * * *"
+    }
+  ]
+}
