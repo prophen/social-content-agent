@@ -206,6 +206,7 @@ button:disabled {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 28px;
+  gap: 16px;
 }
 
 .top-nav a {
@@ -414,4 +415,84 @@ button:disabled {
 .status-published {
   color: #5b2377;
   background: #f0defa;
+}
+.auth-card {
+  max-width: 560px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 28px 0 20px;
+  padding: 4px;
+  background: #edf0f5;
+  border-radius: 12px;
+}
+
+.auth-tab {
+  flex: 1;
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--muted-text);
+  font-weight: 700;
+  background: transparent;
+  border-radius: 8px;
+}
+
+.auth-tab:hover:not(:disabled) {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.auth-tab.active {
+  color: var(--text);
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(23, 32, 51, 0.12);
+}
+
+.auth-form {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-form label {
+  margin-top: 8px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 14px;
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid #bfc9d9;
+  border-radius: 10px;
+  outline: none;
+}
+
+.auth-form input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(91, 72, 216, 0.16);
+}
+
+.auth-form button {
+  margin-top: 14px;
+}
+
+.auth-message {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.auth-message.success {
+  color: #0a5b32;
+  background: #e8f8ef;
+  border: 1px solid #bce9cf;
+}
+
+.auth-message.error {
+  color: #8a1c1c;
+  background: #fff0f0;
+  border: 1px solid #f3b8b8;
 }

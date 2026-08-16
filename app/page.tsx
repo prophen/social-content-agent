@@ -182,6 +182,7 @@ export default function App() {
       <section className="card">
         <nav className="top-nav" aria-label="Primary navigation">
           <Link href="/drafts">View saved drafts</Link>
+          <Link href="/sign-in">Sign in</Link>
         </nav>
 
         <p className="eyebrow">Social Content Agent</p>
