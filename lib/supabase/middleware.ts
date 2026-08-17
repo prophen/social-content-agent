@@ -1,6 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const protectedPaths = ["/drafts"];
+
+function isProtectedPath(pathname: string) {
+  return protectedPaths.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+}
+
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request,
@@ -17,9 +25,11 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
+
             response = NextResponse.next({
               request,
             });
+
             response.cookies.set(name, value, options);
           });
         },
@@ -28,9 +38,42 @@ export async function updateSession(request: NextRequest) {
   );
 
   /*
-    Calling getUser() validates the session and refreshes tokens when needed.
+    Validate the auth session with Supabase rather than trusting an
+    unverified client-side value.
   */
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user && isProtectedPath(request.nextUrl.pathname)) {
+    const redirectUrl = request.nextUrl.clone();
+
+    redirectUrl.pathname = "/sign-in";
+    redirectUrl.searchParams.set(
+      "next",
+      `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    );
+
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (user && request.nextUrl.pathname === "/sign-in") {
+    const nextPath = request.nextUrl.searchParams.get("next");
+
+    if (nextPath?.startsWith("/") && !nextPath.startsWith("//")) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = nextPath;
+      redirectUrl.search = "";
+
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/";
+    redirectUrl.search = "";
+
+    return NextResponse.redirect(redirectUrl);
+  }
 
   return response;
 }
