@@ -204,9 +204,11 @@ button:disabled {
 }
 .top-nav {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
-  margin-bottom: 28px;
   gap: 16px;
+  margin-bottom: 28px;
 }
 
 .top-nav a {
@@ -528,4 +530,8 @@ button:disabled {
   color: var(--primary-hover);
   background: transparent;
   text-decoration: underline;
+}
+.auth-status {
+  color: var(--muted-text);
+  font-size: 0.85rem;
 }

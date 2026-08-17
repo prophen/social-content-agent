@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import AuthControls from "@/app/components/AuthControls";
 
 export type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
@@ -101,6 +102,7 @@ export default function DraftLibraryPage() {
       <section className="card">
         <nav className="top-nav" aria-label="Primary navigation">
           <Link href="/">Create a new draft</Link>
+          <AuthControls showDraftsLink={false} />
         </nav>
 
         <p className="eyebrow">Draft Library</p>

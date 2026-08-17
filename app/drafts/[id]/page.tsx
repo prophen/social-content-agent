@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import AuthControls from "@/app/components/AuthControls";
 
 type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
@@ -212,6 +213,7 @@ export default function DraftEditorPage() {
         <section className="card">
           <nav className="top-nav" aria-label="Primary navigation">
             <Link href="/drafts">Back to Draft Library</Link>
+            <AuthControls showDraftsLink={false} />
           </nav>
 
           <p className="eyebrow">Draft Editor</p>
@@ -276,6 +278,7 @@ export default function DraftEditorPage() {
       <section className="card">
         <nav className="top-nav" aria-label="Primary navigation">
           <Link href="/drafts">Back to Draft Library</Link>
+          <AuthControls showDraftsLink={false} />
         </nav>
 
         <p className="eyebrow">Draft Editor</p>
