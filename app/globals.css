@@ -496,3 +496,36 @@ button:disabled {
   background: #fff0f0;
   border: 1px solid #f3b8b8;
 }
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-controls a {
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-controls a:hover {
+  text-decoration: underline;
+}
+
+.sign-out-button {
+  margin: 0;
+  padding: 0;
+  color: var(--primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.sign-out-button:hover:not(:disabled) {
+  color: var(--primary-hover);
+  background: transparent;
+  text-decoration: underline;
+}
