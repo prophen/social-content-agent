@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
@@ -203,10 +204,9 @@ export async function updateDraft(
   return toDraft(data as DraftRow);
 }
 export async function publishDueDrafts(): Promise<Draft[]> {
-  const supabase = await createClient();
   const now = new Date().toISOString();
 
-  const { data: dueRows, error: findError } = await supabase
+  const { data: dueRows, error: findError } = await supabaseAdmin
     .from("drafts")
     .select("*")
     .eq("status", "scheduled")
@@ -220,11 +220,9 @@ export async function publishDueDrafts(): Promise<Draft[]> {
     return [];
   }
 
-  const dueDrafts = dueRows as DraftRow[];
+  const ids = dueRows.map((draft) => draft.id);
 
-  const ids = dueDrafts.map((draft) => draft.id);
-
-  const { data: publishedRows, error: publishError } = await supabase
+  const { data: publishedRows, error: publishError } = await supabaseAdmin
     .from("drafts")
     .update({
       status: "published",
