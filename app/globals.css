@@ -535,3 +535,90 @@ button:disabled {
   color: var(--muted-text);
   font-size: 0.85rem;
 }
+.activity-section {
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+}
+
+.activity-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.activity-heading h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.refresh-activity-button {
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--primary);
+  font-size: 0.85rem;
+  background: #edf0f5;
+}
+
+.refresh-activity-button:hover:not(:disabled) {
+  color: var(--primary-hover);
+  background: #dfe5ee;
+}
+
+.activity-message,
+.activity-error {
+  margin: 16px 0 0;
+  color: var(--muted-text);
+  line-height: 1.5;
+}
+
+.activity-error {
+  color: #8a1c1c;
+}
+
+.activity-list {
+  display: grid;
+  gap: 0;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activity-item {
+  position: relative;
+  padding: 0 0 20px 28px;
+}
+
+.activity-item::before {
+  position: absolute;
+  top: 5px;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  content: "";
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.activity-item:not(:last-child)::after {
+  position: absolute;
+  top: 19px;
+  bottom: 0;
+  left: 5px;
+  width: 2px;
+  content: "";
+  background: var(--border);
+}
+
+.activity-event {
+  margin: 0;
+  font-weight: 700;
+}
+
+.activity-time {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted-text);
+  font-size: 0.85rem;
+}

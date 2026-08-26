@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createDraft, getDrafts } from "@/lib/drafts";
 import { createClient } from "@/lib/supabase/server";
+import { createDraftEvent } from "@/lib/draftEvents";
 
 async function requireUser() {
   const supabase = await createClient();
@@ -65,6 +66,10 @@ export async function POST(request: Request) {
     }
 
     const draft = await createDraft(topic, content, user.id);
+
+    await createDraftEvent(draft.id, user.id, "draft_created", {
+      source: "ai_generation",
+    });
 
     return NextResponse.json({ draft }, { status: 201 });
   } catch (error) {

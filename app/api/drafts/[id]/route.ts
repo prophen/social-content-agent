@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getDraftById, updateDraft } from "@/lib/drafts";
 import { createClient } from "@/lib/supabase/server";
+import { createDraftEvent } from "@/lib/draftEvents";
 
 type RouteContext = {
   params: Promise<{
@@ -95,6 +96,25 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       return NextResponse.json({ error: "Draft not found." }, { status: 404 });
     }
 
+    const eventType =
+      status === "approved"
+        ? "draft_approved"
+        : status === "scheduled"
+          ? "draft_scheduled"
+          : typeof content === "string"
+            ? "draft_updated"
+            : null;
+
+    if (eventType) {
+      await createDraftEvent(
+        draft.id,
+        user.id,
+        eventType,
+        eventType === "draft_scheduled"
+          ? { scheduledFor: draft.scheduledFor }
+          : {},
+      );
+    }
     return NextResponse.json({ draft });
   } catch (error) {
     console.error("Could not update draft:", error);

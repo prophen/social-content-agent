@@ -19,13 +19,52 @@ type Draft = {
   publishedAt: string | null;
 };
 
+type DraftEventType =
+  | "draft_created"
+  | "draft_updated"
+  | "draft_approved"
+  | "draft_scheduled"
+  | "draft_published"
+  | "draft_publish_failed";
+
+type DraftEvent = {
+  id: string;
+  draftId: string;
+  ownerId: string | null;
+  eventType: DraftEventType;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
+function getEventLabel(event: DraftEvent) {
+  switch (event.eventType) {
+    case "draft_created":
+      return "Draft created";
+    case "draft_updated":
+      return "Draft updated";
+    case "draft_approved":
+      return "Draft approved";
+    case "draft_scheduled": {
+      const scheduledFor = event.metadata.scheduledFor;
 
+      if (typeof scheduledFor === "string") {
+        return `Scheduled for ${formatDate(scheduledFor)}`;
+      }
+
+      return "Draft scheduled";
+    }
+    case "draft_published":
+      return "Draft published";
+    case "draft_publish_failed":
+      return "Publication failed";
+  }
+}
 export default function DraftEditorPage() {
   const params = useParams<{ id: string }>();
   const draftId = params.id;
@@ -38,6 +77,9 @@ export default function DraftEditorPage() {
   const [message, setMessage] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
+  const [events, setEvents] = useState<DraftEvent[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [eventsError, setEventsError] = useState("");
 
   async function readResponse(response: Response) {
     const text = await response.text();
@@ -56,7 +98,28 @@ export default function DraftEditorPage() {
       );
     }
   }
+  async function loadEvents() {
+    setIsLoadingEvents(true);
+    setEventsError("");
 
+    try {
+      const response = await fetch(`/api/drafts/${draftId}/events`);
+      const data = await readResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Could not load activity.");
+      }
+
+      setEvents(data.events);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Could not load activity.";
+
+      setEventsError(errorMessage);
+    } finally {
+      setIsLoadingEvents(false);
+    }
+  }
   useEffect(() => {
     let ignore = false;
 
@@ -94,6 +157,42 @@ export default function DraftEditorPage() {
     }
 
     void fetchDraft();
+
+    return () => {
+      ignore = true;
+    };
+  }, [draftId]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function fetchEvents() {
+      try {
+        const response = await fetch(`/api/drafts/${draftId}/events`);
+        const data = await readResponse(response);
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load activity.");
+        }
+
+        if (!ignore) {
+          setEvents(data.events);
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Could not load activity.";
+
+        if (!ignore) {
+          setEventsError(errorMessage);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoadingEvents(false);
+        }
+      }
+    }
+
+    void fetchEvents();
 
     return () => {
       ignore = true;
@@ -147,6 +246,7 @@ export default function DraftEditorPage() {
       setDraft(data.draft);
       setContent(data.draft.content);
       setMessage("Changes saved.");
+      void loadEvents();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Could not save this draft.";
@@ -262,6 +362,7 @@ export default function DraftEditorPage() {
         new Date(data.draft.scheduledFor).toISOString().slice(0, 16),
       );
       setMessage("Draft scheduled.");
+      void loadEvents();
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -400,6 +501,54 @@ export default function DraftEditorPage() {
             </p>
           </section>
         )}
+        <section
+          className="activity-section"
+          aria-labelledby="activity-heading"
+        >
+          <div className="activity-heading">
+            <h2 id="activity-heading">Activity</h2>
+
+            <button
+              type="button"
+              className="refresh-activity-button"
+              onClick={() => void loadEvents()}
+              disabled={isLoadingEvents}
+            >
+              {isLoadingEvents ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
+
+          {isLoadingEvents && (
+            <p className="activity-message">Loading activity...</p>
+          )}
+
+          {!isLoadingEvents && eventsError && (
+            <p className="activity-error" role="alert">
+              Could not load activity: {eventsError}
+            </p>
+          )}
+
+          {!isLoadingEvents && !eventsError && events.length === 0 && (
+            <p className="activity-message">
+              No activity has been recorded for this draft yet.
+            </p>
+          )}
+
+          {!isLoadingEvents && !eventsError && events.length > 0 && (
+            <ol className="activity-list">
+              {events.map((event) => (
+                <li className="activity-item" key={event.id}>
+                  <div>
+                    <p className="activity-event">{getEventLabel(event)}</p>
+                    <time className="activity-time" dateTime={event.createdAt}>
+                      {formatDate(event.createdAt)}
+                    </time>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </section>
     </main>
   );
