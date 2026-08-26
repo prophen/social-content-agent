@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createDraftEvent } from "@/lib/draftEvents";
 
 export type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
@@ -236,5 +237,28 @@ export async function publishDueDrafts(): Promise<Draft[]> {
     throw new Error(`Could not publish due drafts: ${publishError.message}`);
   }
 
-  return (publishedRows as DraftRow[]).map(toDraft);
+  const publishedDrafts = (publishedRows ?? []) as DraftRow[];
+
+  if (publishedDrafts.length > 0) {
+    const { error: eventError } = await supabaseAdmin
+      .from("draft_events")
+      .insert(
+        publishedDrafts.map((draft) => ({
+          draft_id: draft.id,
+          owner_id: draft.owner_id,
+          event_type: "draft_published",
+          metadata: {
+            publishedAt: now,
+          },
+        })),
+      );
+
+    if (eventError) {
+      throw new Error(
+        `Drafts were published, but activity events could not be recorded: ${eventError.message}`,
+      );
+    }
+  }
+
+  return publishedDrafts.map(toDraft);
 }
