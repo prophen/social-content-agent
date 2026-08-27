@@ -1,15 +1,51 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import { brandVoice } from "@/lib/brandVoice";
+import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const MAX_GENERATIONS_PER_HOUR = 10;
+const ONE_HOUR_IN_MS = 60 * 60 * 1000;
+
+async function requireUser() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    return null;
+  }
+
+  return user;
+}
+
 export async function POST(request: Request) {
   try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to generate a draft." },
+        { status: 401 },
+      );
+    }
+
     const body = await request.json();
     const topic = body.topic?.trim();
+
+    if (typeof topic !== "string" || topic.length > 300) {
+      return NextResponse.json(
+        { error: "Topic must be 300 characters or fewer." },
+        { status: 400 },
+      );
+    }
 
     if (!topic) {
       return NextResponse.json(
@@ -22,6 +58,29 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "The server is missing its OpenAI API key." },
         { status: 500 },
+      );
+    }
+
+    const oneHourAgo = new Date(Date.now() - ONE_HOUR_IN_MS).toISOString();
+
+    const { count, error: countError } = await supabaseAdmin
+      .from("generation_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", oneHourAgo);
+
+    if (countError) {
+      throw new Error(
+        `Could not check the generation limit: ${countError.message}`,
+      );
+    }
+
+    if ((count ?? 0) >= MAX_GENERATIONS_PER_HOUR) {
+      return NextResponse.json(
+        {
+          error: `You have reached the limit of ${MAX_GENERATIONS_PER_HOUR} AI generations per hour. Please try again later.`,
+        },
+        { status: 429 },
       );
     }
 
@@ -63,6 +122,19 @@ export async function POST(request: Request) {
 
       input: `Write one LinkedIn post about this topic: "${topic}"`,
     });
+
+    const { error: insertError } = await supabaseAdmin
+      .from("generation_requests")
+      .insert({
+        user_id: user.id,
+      });
+
+    if (insertError) {
+      console.error(
+        "Draft was generated, but the generation request could not be recorded:",
+        insertError,
+      );
+    }
 
     return NextResponse.json({
       draft: response.output_text,

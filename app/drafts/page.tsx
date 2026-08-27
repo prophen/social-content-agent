@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import AuthControls from "@/app/components/AuthControls";
 
 type DraftStatus =
   | "draft"
@@ -97,7 +98,39 @@ export default function DraftsPage() {
   }
 
   useEffect(() => {
-    void loadDrafts();
+    let ignore = false;
+
+    async function fetchDrafts() {
+      try {
+        const response = await fetch("/api/drafts");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not load drafts.");
+        }
+
+        if (!ignore) {
+          setDrafts(data.drafts);
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Could not load drafts.";
+
+        if (!ignore) {
+          setError(message);
+        }
+      } finally {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void fetchDrafts();
+
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   const filteredDrafts = useMemo(() => {
@@ -119,9 +152,13 @@ export default function DraftsPage() {
           </p>
         </div>
 
-        <Link className="new-draft-button" href="/">
-          New draft
-        </Link>
+        <div className="dashboard-actions">
+          <Link className="new-draft-button" href="/drafts/new">
+            New draft
+          </Link>
+
+          <AuthControls showDraftsLink={false} />
+        </div>
       </div>
 
       <section aria-label="Draft filters">
@@ -165,7 +202,7 @@ export default function DraftsPage() {
               : "Try another filter or create a new draft."}
           </p>
           {filter === "all" && (
-            <Link className="new-draft-button" href="/">
+            <Link className="new-draft-button" href="/drafts/new">
               Create a draft
             </Link>
           )}

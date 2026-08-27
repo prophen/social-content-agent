@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { createDraftEvent } from "@/lib/draftEvents";
 
 export type DraftStatus = "draft" | "approved" | "scheduled" | "published";
 
