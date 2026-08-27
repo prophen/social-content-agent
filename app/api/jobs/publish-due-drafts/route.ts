@@ -19,8 +19,6 @@ async function runPublisherJob(request: Request) {
   if (authorization !== `Bearer ${expectedSecret}`) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
-  console.log("PUBLISH_DIAGNOSTIC_START");
-  console.error("PUBLISH_DIAGNOSTIC_ERROR_TEST");
   try {
     const publishedDrafts = await publishDueDrafts();
 
