@@ -104,7 +104,9 @@ export default function SignInForm() {
     <main className="page">
       <section className="card auth-card">
         <nav className="top-nav" aria-label="Primary navigation">
-          <Link href="/">Back to editor</Link>
+          <Link href="https://github.com/prophen/social-content-agent">
+            View project on GitHub
+          </Link>
         </nav>
 
         <p className="eyebrow">Social Content Agent</p>
@@ -113,7 +115,7 @@ export default function SignInForm() {
 
         <p className="intro">
           {mode === "sign-in"
-            ? "Sign in to access drafts associated with your account."
+            ? "Sign in to create, review, schedule, and track AI-assisted social drafts."
             : "Create an account to keep your drafts private and available across devices."}
         </p>
 
