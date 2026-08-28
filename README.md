@@ -401,5 +401,18 @@ The current publisher simulates publication. Integrating a real social platform 
 - Add pagination and search for larger draft collections
 
 ## Screenshots
+Draft dashboard
+<img width="1802" height="1503" alt="draft dashboard" src="https://github.com/user-attachments/assets/24ae27e1-0f75-4498-96d8-ef40d7dc64d4" />
+
+New draft page after AI generation
+<img width="1802" height="1260" alt="new draft page" src="https://github.com/user-attachments/assets/9309727d-f64d-4aa9-9dec-7a5d5e3e487c" />
+
+Draft editor
+<img width="1802" height="1260" alt="image" src="https://github.com/user-attachments/assets/1da78eb5-5a42-48bc-a8a1-93057f4d074d" />
+<img width="1802" height="1464" alt="image" src="https://github.com/user-attachments/assets/94537990-ed47-48a0-bf8e-983e8b038d07" />
+
+Activity timeline
+<img width="1802" height="1388" alt="image" src="https://github.com/user-attachments/assets/1cb67e61-e416-4db6-b98a-0529e2fc2fb1" />
 
 ## License
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
