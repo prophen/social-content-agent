@@ -18,18 +18,23 @@ export default function NewDraftPage() {
   const [topic, setTopic] = useState("");
   const [content, setContent] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationMessage, setGenerationMessage] = useState("");
 
   async function handleGenerate() {
+    setGenerationMessage("");
     const trimmedTopic = topic.trim();
 
     if (!trimmedTopic) {
+      setInvalidFields(["topic"]);
       setErrorMessage("Enter a topic before generating a draft.");
       return;
     }
 
     setIsGenerating(true);
+    setInvalidFields([]);
     setErrorMessage("");
 
     try {
@@ -50,6 +55,7 @@ export default function NewDraftPage() {
       }
 
       setContent(data.draft);
+      setGenerationMessage("Draft generated. Review and edit the draft content before saving.");
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Could not generate a draft.",
@@ -66,11 +72,16 @@ export default function NewDraftPage() {
     const trimmedContent = content.trim();
 
     if (!trimmedTopic || !trimmedContent) {
+      setInvalidFields([
+        ...(!trimmedTopic ? ["topic"] : []),
+        ...(!trimmedContent ? ["content"] : []),
+      ]);
       setErrorMessage("Enter both a topic and draft content.");
       return;
     }
 
     setIsCreating(true);
+    setInvalidFields([]);
     setErrorMessage("");
 
     try {
@@ -126,7 +137,13 @@ export default function NewDraftPage() {
               autoComplete="off"
               id="topic"
               name="topic"
-              onChange={(event) => setTopic(event.target.value)}
+              onChange={(event) => {
+                setTopic(event.target.value);
+                setInvalidFields([]);
+                setErrorMessage("");
+              }}
+              aria-invalid={invalidFields.includes("topic")}
+              aria-describedby={invalidFields.includes("topic") ? "new-draft-error" : undefined}
               placeholder="For example: Product launch announcement"
               required
               value={topic}
@@ -141,12 +158,22 @@ export default function NewDraftPage() {
             {isGenerating ? "Generating with AI..." : "Generate with AI"}
           </button>
 
+          <p className="save-message live-message" role="status" aria-atomic="true">
+            {isCreating ? "Creating draft..." : isGenerating ? "Generating draft..." : generationMessage}
+          </p>
+
           <div className="form-field">
             <label htmlFor="content">Draft content</label>
             <textarea
               id="content"
               name="content"
-              onChange={(event) => setContent(event.target.value)}
+              onChange={(event) => {
+                setContent(event.target.value);
+                setInvalidFields([]);
+                setErrorMessage("");
+              }}
+              aria-invalid={invalidFields.includes("content")}
+              aria-describedby={invalidFields.includes("content") ? "new-draft-error" : undefined}
               placeholder="Generate a draft with AI, or write your own content here..."
               required
               rows={12}
@@ -154,11 +181,9 @@ export default function NewDraftPage() {
             />
           </div>
 
-          {errorMessage && (
-            <p className="form-error" role="alert">
-              {errorMessage}
-            </p>
-          )}
+          <p id="new-draft-error" className={errorMessage ? "form-error" : "sr-only"} role="alert" aria-atomic="true">
+            {errorMessage}
+          </p>
 
           <div className="new-draft-form-actions">
             <Link className="secondary-link-button" href="/drafts">

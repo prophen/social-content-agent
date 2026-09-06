@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthMode = "sign-in" | "sign-up";
@@ -18,10 +18,16 @@ export default function SignInForm() {
       : "/drafts";
 
   const [mode, setMode] = useState<AuthMode>("sign-in");
+  const signInTab = useRef<HTMLButtonElement>(null);
+  const signUpTab = useRef<HTMLButtonElement>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState({ text: "", type: "status" as "status" | "error" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function setMessage(text: string, type: "status" | "error" = "status") {
+    setNotice({ text, type });
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,17 +35,17 @@ export default function SignInForm() {
     const cleanEmail = email.trim();
 
     if (!cleanEmail || !password) {
-      setMessage("Enter both your email address and password.");
+      setMessage("Enter both your email address and password.", "error");
       return;
     }
 
     if (password.length < 8) {
-      setMessage("Use a password with at least 8 characters.");
+      setMessage("Use a password with at least 8 characters.", "error");
       return;
     }
 
     setIsSubmitting(true);
-    setMessage("");
+    setMessage(mode === "sign-in" ? "Signing in..." : "Creating account...");
 
     const supabase = createClient();
 
@@ -85,20 +91,28 @@ export default function SignInForm() {
           ? error.message
           : "Something went wrong. Please try again.";
 
-      setMessage(errorMessage);
+      setMessage(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   function switchMode(nextMode: AuthMode) {
+    if (nextMode === mode) return;
     setMode(nextMode);
     setMessage("");
     setPassword("");
   }
 
-  const isSuccess =
-    message.startsWith("Signed in") || message.startsWith("Account created");
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const nextMode = event.key === "Home" ? "sign-in"
+      : event.key === "End" ? "sign-up"
+      : mode === "sign-in" ? "sign-up" : "sign-in";
+    switchMode(nextMode);
+    (nextMode === "sign-in" ? signInTab : signUpTab).current?.focus();
+  }
 
   return (
     <main className="page">
@@ -125,6 +139,11 @@ export default function SignInForm() {
             className={mode === "sign-in" ? "auth-tab active" : "auth-tab"}
             onClick={() => switchMode("sign-in")}
             role="tab"
+            id="sign-in-tab"
+            ref={signInTab}
+            aria-controls="account-panel"
+            tabIndex={mode === "sign-in" ? 0 : -1}
+            onKeyDown={handleTabKeyDown}
             aria-selected={mode === "sign-in"}
           >
             Sign in
@@ -135,12 +154,18 @@ export default function SignInForm() {
             className={mode === "sign-up" ? "auth-tab active" : "auth-tab"}
             onClick={() => switchMode("sign-up")}
             role="tab"
+            id="sign-up-tab"
+            ref={signUpTab}
+            aria-controls="account-panel"
+            tabIndex={mode === "sign-up" ? 0 : -1}
+            onKeyDown={handleTabKeyDown}
             aria-selected={mode === "sign-up"}
           >
             Create account
           </button>
         </div>
 
+        <div id="account-panel" role="tabpanel" aria-labelledby={`${mode}-tab`}>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label htmlFor="email">Email address</label>
 
@@ -179,16 +204,13 @@ export default function SignInForm() {
           </button>
         </form>
 
-        {message && (
-          <p
-            className={
-              isSuccess ? "auth-message success" : "auth-message error"
-            }
-            role="status"
-          >
-            {message}
-          </p>
-        )}
+        <p className={notice.type === "status" && notice.text ? "auth-message success" : "sr-only"} role="status" aria-atomic="true">
+          {notice.type === "status" ? notice.text : ""}
+        </p>
+        <p className={notice.type === "error" && notice.text ? "auth-message error" : "sr-only"} role="alert" aria-atomic="true">
+          {notice.type === "error" ? notice.text : ""}
+        </p>
+        </div>
       </section>
     </main>
   );

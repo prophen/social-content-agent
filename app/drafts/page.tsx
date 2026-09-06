@@ -179,7 +179,11 @@ export default function DraftsPage() {
         </div>
       </section>
 
-      {isLoading && <p className="dashboard-message">Loading drafts...</p>}
+      <p className={isLoading ? "dashboard-message" : "sr-only"} role="status" aria-atomic="true">
+        {isLoading ? "Loading drafts..." : error ? "" : filteredDrafts.length === 0
+          ? `No ${filter === "all" ? "" : `${getStatusLabel(filter).toLowerCase()} `}drafts yet.`
+          : `${filteredDrafts.length} ${filter === "all" ? "" : `${getStatusLabel(filter).toLowerCase()} `}drafts shown.`}
+      </p>
 
       {!isLoading && error && (
         <div className="dashboard-error" role="alert">
@@ -239,7 +243,7 @@ export default function DraftsPage() {
                 </p>
               )}
 
-              <Link className="open-draft-link" href={`/drafts/${draft.id}`}>
+              <Link className="open-draft-link" href={`/drafts/${draft.id}`} aria-label={`Open draft: ${draft.topic || "Untitled draft"}`}>
                 Open draft <span aria-hidden="true">→</span>
               </Link>
             </article>

@@ -4,6 +4,7 @@
   --text: #172033;
   --muted-text: #5f6b7d;
   --border: #dde3ee;
+  --control-border: #78869b;
   --primary: #5b48d8;
   --primary-hover: #4837bc;
   --success: #087443;
@@ -87,7 +88,7 @@ textarea {
   color: var(--text);
   line-height: 1.5;
   background: #ffffff;
-  border: 1px solid #bfc9d9;
+  border: 1px solid var(--control-border);
   border-radius: 10px;
   outline: none;
 }
@@ -403,7 +404,7 @@ button:disabled {
   padding: 10px 12px;
   color: inherit;
   font: inherit;
-  border: 1px solid #aebed8;
+  border: 1px solid var(--control-border);
   border-radius: 10px;
 }
 
@@ -479,7 +480,7 @@ button:disabled {
   padding: 14px;
   color: var(--text);
   background: #ffffff;
-  border: 1px solid #bfc9d9;
+  border: 1px solid var(--control-border);
   border-radius: 10px;
   outline: none;
 }
@@ -963,7 +964,7 @@ button:disabled {
   font: inherit;
   line-height: 1.5;
   background: #fff;
-  border: 1px solid var(--border);
+  border: 1px solid var(--control-border);
   border-radius: 8px;
 }
 
@@ -1067,4 +1068,20 @@ button:disabled {
 .generate-draft-button:hover:not(:disabled) {
   color: var(--primary-hover);
   background: #dfe5ee;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.live-message:empty {
+  margin: 0;
 }

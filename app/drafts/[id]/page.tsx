@@ -74,12 +74,18 @@ export default function DraftEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState({ text: "", type: "status" as "status" | "error" });
+  const message = notice.text;
+  const [scheduleError, setScheduleError] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
   const [events, setEvents] = useState<DraftEvent[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(true);
   const [eventsError, setEventsError] = useState("");
+
+  function setMessage(text: string, type: "status" | "error" = "status") {
+    setNotice({ text, type });
+  }
 
   async function readResponse(response: Response) {
     const text = await response.text();
@@ -147,7 +153,7 @@ export default function DraftEditorPage() {
           error instanceof Error ? error.message : "Could not load this draft.";
 
         if (!ignore) {
-          setMessage(`Error: ${errorMessage}`);
+          setMessage(`Error: ${errorMessage}`, "error");
         }
       } finally {
         if (!ignore) {
@@ -219,7 +225,7 @@ export default function DraftEditorPage() {
 
   async function saveChanges() {
     if (!draft || !content.trim()) {
-      setMessage("The draft is empty, so there is nothing to save.");
+      setMessage("The draft is empty, so there is nothing to save.", "error");
       return;
     }
 
@@ -251,7 +257,7 @@ export default function DraftEditorPage() {
       const errorMessage =
         error instanceof Error ? error.message : "Could not save this draft.";
 
-      setMessage(`Save failed: ${errorMessage}`);
+      setMessage(`Save failed: ${errorMessage}`, "error");
     } finally {
       setIsSaving(false);
     }
@@ -291,7 +297,7 @@ export default function DraftEditorPage() {
           ? error.message
           : "Could not approve this draft.";
 
-      setMessage(`Approval failed: ${errorMessage}`);
+      setMessage(`Approval failed: ${errorMessage}`, "error");
     } finally {
       setIsApproving(false);
     }
@@ -301,7 +307,7 @@ export default function DraftEditorPage() {
     return (
       <main className="page">
         <section className="card">
-          <p className="status-message">Loading draft...</p>
+          <p className="status-message" role="status">Loading draft...</p>
         </section>
       </main>
     );
@@ -318,7 +324,7 @@ export default function DraftEditorPage() {
 
           <p className="eyebrow">Draft Editor</p>
           <h1>Draft unavailable</h1>
-          <p className="intro">
+          <p className="intro" role="alert">
             {message || "This draft may have been deleted or does not exist."}
           </p>
         </section>
@@ -330,11 +336,14 @@ export default function DraftEditorPage() {
       return;
     }
 
-    if (!scheduledFor) {
-      setMessage("Choose a future date and time first.");
+    if (!scheduledFor || !Number.isFinite(new Date(scheduledFor).getTime()) || new Date(scheduledFor).getTime() <= Date.now()) {
+      const error = "Choose a future date and time first.";
+      setScheduleError(error);
+      setMessage(error, "error");
       return;
     }
 
+    setScheduleError("");
     setIsScheduling(true);
     setMessage("Scheduling draft...");
 
@@ -369,7 +378,7 @@ export default function DraftEditorPage() {
           ? error.message
           : "Could not schedule this draft.";
 
-      setMessage(`Scheduling failed: ${errorMessage}`);
+      setMessage(`Scheduling failed: ${errorMessage}`, "error");
     } finally {
       setIsScheduling(false);
     }
@@ -452,7 +461,13 @@ export default function DraftEditorPage() {
                   id="scheduled-for"
                   type="datetime-local"
                   value={scheduledFor}
-                  onChange={(event) => setScheduledFor(event.target.value)}
+                  aria-invalid={Boolean(scheduleError)}
+                  aria-describedby={scheduleError ? "editor-error" : undefined}
+                  onChange={(event) => {
+                    setScheduledFor(event.target.value);
+                    setScheduleError("");
+                    setMessage("");
+                  }}
                 />
 
                 <button
@@ -476,20 +491,12 @@ export default function DraftEditorPage() {
             )}
           </div>
         )}
-        {message && (
-          <p
-            className={
-              message.startsWith("Error") ||
-              message.startsWith("Save failed") ||
-              message.startsWith("Approval failed")
-                ? "error-message-inline"
-                : "save-message"
-            }
-            role={message.startsWith("Error") ? "alert" : undefined}
-          >
-            {message}
-          </p>
-        )}
+        <p className="save-message live-message" role="status" aria-atomic="true">
+          {notice.type === "status" ? message : ""}
+        </p>
+        <p id="editor-error" className="error-message-inline live-message" role="alert" aria-atomic="true">
+          {notice.type === "error" ? message : ""}
+        </p>
 
         {draft.status === "approved" && (
           <section className="approval-note">
@@ -518,9 +525,11 @@ export default function DraftEditorPage() {
             </button>
           </div>
 
-          {isLoadingEvents && (
-            <p className="activity-message">Loading activity...</p>
-          )}
+          <p className="activity-message live-message" role="status" aria-atomic="true">
+            {isLoadingEvents ? "Loading activity..." : !eventsError && events.length === 0
+              ? "No activity has been recorded for this draft yet." : !eventsError
+                ? `${events.length} activity events loaded.` : ""}
+          </p>
 
           {!isLoadingEvents && eventsError && (
             <p className="activity-error" role="alert">
@@ -528,11 +537,6 @@ export default function DraftEditorPage() {
             </p>
           )}
 
-          {!isLoadingEvents && !eventsError && events.length === 0 && (
-            <p className="activity-message">
-              No activity has been recorded for this draft yet.
-            </p>
-          )}
 
           {!isLoadingEvents && !eventsError && events.length > 0 && (
             <ol className="activity-list">
