@@ -24,6 +24,9 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
+  /* Keep content clear of the notch and home indicator in either orientation. */
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   color: var(--text);
   background: var(--background);
 }
@@ -34,7 +37,7 @@ textarea {
 }
 
 .page {
-  min-height: 100vh;
+  min-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   padding: 48px 20px;
 }
 
@@ -165,7 +168,7 @@ button:disabled {
 
 @media (max-width: 600px) {
   .page {
-    padding: 24px 16px;
+    padding: 40px 16px 24px;
   }
 
   .card {
@@ -871,7 +874,7 @@ button:disabled {
 @media (max-width: 600px) {
   .dashboard-page {
     width: min(100% - 32px, 1120px);
-    padding-top: 32px;
+    padding-top: 48px;
   }
 
   .dashboard-header {
@@ -1035,7 +1038,7 @@ button:disabled {
 @media (max-width: 600px) {
   .new-draft-page {
     width: min(100% - 32px, 760px);
-    padding-top: 24px;
+    padding-top: 40px;
   }
 
   .new-draft-header {
