@@ -479,6 +479,9 @@ button:disabled {
   width: 100%;
   padding: 14px;
   color: var(--text);
+  font: inherit;
+  /* Keep text at least 16px to prevent iPhone Safari focus zoom. */
+  font-size: max(16px, 1rem);
   background: #ffffff;
   border: 1px solid var(--control-border);
   border-radius: 10px;
