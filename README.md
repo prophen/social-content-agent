@@ -283,7 +283,29 @@ In Vercel:
 
 Cron jobs run against Production deployments. For local testing, call the protected route manually with the expected authorization header.
 
-## Testing the publisher
+## Automated tests
+
+Run the isolated test suite with `npm test`, keep it running while editing with
+`npm run test:watch`, or generate coverage with `npm run test:coverage`.
+The HTML coverage report is written to `coverage/index.html`.
+
+Tests use Vitest and React Testing Library. They cover draft approval and scheduling,
+editing safeguards, simulated publication and activity recording, API authentication,
+AI input validation and quota handling, and sign-in interactions. Supabase and OpenAI
+are mocked at their module boundaries; no environment file, live database, API key,
+or running development server is required.
+
+Add server tests as `tests/**/*.test.ts`. Component tests use `tests/**/*.test.tsx`
+with a `// @vitest-environment jsdom` directive. Shared query fixtures live in
+`tests/helpers/supabase.ts`. Coverage includes untested application modules to make
+remaining gaps visible; it does not establish live database RLS or end-to-end coverage.
+
+GitHub Actions runs lint, TypeScript checking, and tests with coverage on pushes and
+pull requests. Run `npm run lint` and `npm run typecheck` locally for the same checks.
+The existing browser accessibility audit remains available as `npm run test:a11y`
+and has its own running-app requirements in `audit/verify-fixes.cjs`.
+
+## Manually testing the publisher
 
 Use a disposable draft only.
 
@@ -397,7 +419,7 @@ The current publisher simulates publication. Integrating a real social platform 
 - Add post-performance analytics
 - Add retries, backoff, and alerting for provider failures
 - Use an atomic database function or distributed limiter for high-traffic rate limiting
-- Add automated API and end-to-end tests
+- Add end-to-end tests against a disposable Supabase project
 - Add pagination and search for larger draft collections
 
 ## Screenshots

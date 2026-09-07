@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const topic = body.topic?.trim();
+    const topic = typeof body?.topic === "string" ? body.topic.trim() : undefined;
 
     if (typeof topic !== "string" || topic.length > 300) {
       return NextResponse.json(
