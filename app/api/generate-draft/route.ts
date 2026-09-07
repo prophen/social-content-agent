@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { brandVoice } from "@/lib/brandVoice";
+import { getBrandVoice } from "@/lib/brandVoiceStore";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 
@@ -84,6 +84,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const brandVoice = await getBrandVoice(user.id);
     const response = await openai.responses.create({
       model: "gpt-5.6",
 

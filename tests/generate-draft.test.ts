@@ -1,5 +1,9 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { query } from "./helpers/supabase";
+import { brandVoice } from "@/lib/brandVoice";
+
+const { getBrandVoice } = vi.hoisted(() => ({ getBrandVoice: vi.fn() }));
+vi.mock("@/lib/brandVoiceStore", () => ({ getBrandVoice }));
 
 const { getUser, from, generate } = vi.hoisted(() => ({ getUser: vi.fn(), from: vi.fn(), generate: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { getUser } }) }));
@@ -12,10 +16,19 @@ function request(topic: unknown) {
 }
 
 beforeEach(() => {
+  getBrandVoice.mockReset().mockResolvedValue(brandVoice);
   getUser.mockReset().mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
   from.mockReset(); generate.mockReset().mockResolvedValue({ output_text: "Generated post" });
   vi.stubEnv("OPENAI_API_KEY", "test-key");
   vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+it("uses the signed-in user's saved voice for generation", async () => {
+  from.mockReturnValue(query({ count: 0 }));
+  getBrandVoice.mockResolvedValue({ ...brandVoice, name: "My custom voice", tone: ["Warm and direct"] });
+  expect((await POST(request("AI"))).status).toBe(200);
+  expect(getBrandVoice).toHaveBeenCalledWith("user-1");
+  expect(generate).toHaveBeenCalledWith(expect.objectContaining({ instructions: expect.stringContaining("Warm and direct") }));
 });
 
 it("requires authentication before spending tokens or checking quota", async () => {

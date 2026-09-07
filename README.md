@@ -21,10 +21,16 @@ Enter a topic
 
 The project focuses on the product and engineering work around AI generation—not only the model call. It includes user-specific draft ownership, human review before scheduling, status-based workflow controls, a scheduled server-side publisher, and an auditable event history.
 
+## Demo
+
+![Watch the Social Content Agent demo](./public/assets/social-content-agent-demo-thumbnail.jpg)
+
+Watch the 51-second walkthrough: [Social Content Agent demo](https://youtu.be/HWN_2BmjthY).
+
 ## Features
 
 - Generate LinkedIn post drafts with the OpenAI Responses API
-- Apply a reusable brand-voice configuration to generated content
+- Edit and save a personal brand voice, used for subsequent AI generations
 - Review and edit AI output before saving it
 - Create and manage drafts from a personal dashboard
 - Filter drafts by Draft, Approved, Scheduled, Published, and Publish failed status
@@ -51,6 +57,12 @@ The project focuses on the product and engineering work around AI generation—n
 | Deployment            | Vercel                                |
 
 ## User workflow
+
+### Set your brand voice
+
+Select **Brand voice** in the navigation to edit your audience, tone, goals, words to avoid, formatting, accuracy rules, and call to action. Use one item per line for lists, then select **Save brand voice**. Changes are saved to your account and apply to future generations. Existing drafts are unchanged; accounts without saved settings start with the defaults in `lib/brandVoice.ts`.
+
+Before using this feature, apply `supabase/migrations/20260907120000_create_brand_voices.sql` in your Supabase project's SQL editor (or your normal migration workflow). This creates the per-user settings table and its Row Level Security policies. Deploy the migration before deploying the app changes.
 
 ### 1. Create a draft
 
@@ -196,41 +208,33 @@ Run migrations in filename order in a new Supabase project. Do not run table-cre
 
 1. Clone the repository:
 
-   ```bash
-   git clone https://github.com/YOUR_GITHUB_USERNAME/social-content-agent.git
-   ```
+```bash
+ git clone https://github.com/YOUR_GITHUB_USERNAME/social-content-agent.git
+```
 
 2. Move into the project folder:
 
-   ```bash
-   cd social-content-agent
-   ```
+```bash
+ cd social-content-agent
+```
 
 3. Install dependencies:
 
-   ```bash
-   npm install
-   ```
+```bash
+ npm install
+```
 
 4. Create a local environment file:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+ cp .env.example .env.local
+```
 
-   On Windows PowerShell, use:
+On Windows PowerShell, use: 5. Add your values to `.env.local`. 6. Run the development server:
 
-   ```powershell
-   Copy-Item .env.example .env.local
-   ```
-
-5. Add your values to `.env.local`.
-
-6. Run the development server:
-
-   ```bash
-   npm run dev
-   ```
+```bash
+ npm run dev
+```
 
 7. Open [http://localhost:3000](http://localhost:3000).
 
@@ -516,18 +520,20 @@ The current publisher simulates publication. Integrating a real social platform 
 - Add pagination and search for larger draft collections
 
 ## Screenshots
+
 Draft dashboard
-<img width="1802" height="1503" alt="draft dashboard" src="https://github.com/user-attachments/assets/24ae27e1-0f75-4498-96d8-ef40d7dc64d4" />
+![draft dashboard](https://github.com/user-attachments/assets/24ae27e1-0f75-4498-96d8-ef40d7dc64d4)
 
 New draft page after AI generation
-<img width="1802" height="1260" alt="new draft page" src="https://github.com/user-attachments/assets/9309727d-f64d-4aa9-9dec-7a5d5e3e487c" />
+![new draft page](https://github.com/user-attachments/assets/9309727d-f64d-4aa9-9dec-7a5d5e3e487c)
 
 Draft editor
-<img width="1802" height="1260" alt="image" src="https://github.com/user-attachments/assets/1da78eb5-5a42-48bc-a8a1-93057f4d074d" />
-<img width="1802" height="1464" alt="image" src="https://github.com/user-attachments/assets/94537990-ed47-48a0-bf8e-983e8b038d07" />
+![image](https://github.com/user-attachments/assets/1da78eb5-5a42-48bc-a8a1-93057f4d074d)
+![image](https://github.com/user-attachments/assets/94537990-ed47-48a0-bf8e-983e8b038d07)
 
 Activity timeline
-<img width="1802" height="1388" alt="image" src="https://github.com/user-attachments/assets/1cb67e61-e416-4db6-b98a-0529e2fc2fb1" />
+![image](https://github.com/user-attachments/assets/1cb67e61-e416-4db6-b98a-0529e2fc2fb1)
 
 ## License
+
 This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.

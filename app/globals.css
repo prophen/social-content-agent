@@ -1076,6 +1076,13 @@ button:disabled {
   background: #dfe5ee;
 }
 
+.brand-voice-hint {
+  margin: 0 0 10px;
+  color: var(--muted-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

@@ -88,6 +88,7 @@ export default function AuthControls({
   return (
     <div className="auth-controls">
       {showDraftsLink && <Link href="/drafts">My drafts</Link>}
+      <Link href="/brand-voice">Brand voice</Link>
 
       <button
         type="button"
