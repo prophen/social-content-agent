@@ -285,9 +285,15 @@ Cron jobs run against Production deployments. For local testing, call the protec
 
 ## Automated tests
 
-Run the isolated test suite with `npm test`, keep it running while editing with
-`npm run test:watch`, or generate coverage with `npm run test:coverage`.
-The HTML coverage report is written to `coverage/index.html`.
+After installing dependencies with `npm ci`, run the isolated test suite:
+
+```bash
+npm test
+```
+
+Use `npm run test:watch` while editing or `npm run test:coverage` to generate
+terminal, HTML, and LCOV coverage reports. Open `coverage/index.html` for the HTML
+report; generated coverage files are ignored by Git.
 
 Tests use Vitest and React Testing Library. They cover draft approval and scheduling,
 editing safeguards, simulated publication and activity recording, API authentication,
@@ -301,9 +307,77 @@ with a `// @vitest-environment jsdom` directive. Shared query fixtures live in
 remaining gaps visible; it does not establish live database RLS or end-to-end coverage.
 
 GitHub Actions runs lint, TypeScript checking, and tests with coverage on pushes and
-pull requests. Run `npm run lint` and `npm run typecheck` locally for the same checks.
-The existing browser accessibility audit remains available as `npm run test:a11y`
-and has its own running-app requirements in `audit/verify-fixes.cjs`.
+pull requests. Run the same checks locally with:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:coverage
+```
+
+The workflow is defined in [.github/workflows/test.yml](.github/workflows/test.yml).
+Browser accessibility checks run separately and are not included in this CI workflow.
+
+## Accessibility audit
+
+The [6 September 2026 accessibility audit](audit/accessibility-audit.md) documents
+four resolved findings from a WCAG 2.2 A/AA oriented review:
+
+- Persistent status and alert regions announce workflow feedback, with validation
+  errors associated with their inputs.
+- Editable field borders have stronger contrast against white and panel backgrounds.
+- Sign-in/sign-up tabs support wrapping arrow keys, Home/End, a single Tab stop,
+  and an associated labelled panel.
+- Authentication, draft library, new-draft, and editor routes have distinct page titles.
+
+Additional improvements include topic-specific draft links and loading, filtering,
+generation, and draft-creation feedback.
+
+### Run accessibility regression checks
+
+After completing local setup, install Chromium and start the app:
+
+```bash
+npx playwright install chromium
+npm run dev
+```
+
+In a second terminal, run:
+
+```bash
+npm run test:a11y
+```
+
+The runner defaults to `http://localhost:3000`. To use another local port in PowerShell:
+
+```powershell
+$env:A11Y_BASE_URL = 'http://localhost:3017'
+npm run test:a11y
+```
+
+On macOS or Linux (bash/zsh):
+
+```bash
+A11Y_BASE_URL=http://localhost:3017 npm run test:a11y
+```
+
+The [regression runner](audit/verify-fixes.cjs) uses Playwright and axe-core. It
+checks the running app's authentication UI and renders actual protected page
+components in an isolated browser harness with mocked router, authentication, and
+API responses. No account credentials are required. Results are written to
+`audit/results/verification.json` and a narrow-screen screenshot to
+`audit/results/sign-up-320.png`; this directory is ignored by Git. For Linux CI
+environments, install Chromium with `npx playwright install --with-deps chromium`.
+
+The recorded audit found zero axe violations and zero incomplete checks across
+seven UI states. Browser assertions also cover keyboard navigation, persistent
+feedback regions, validation associations, control contrast, distinct titles, and
+sign-up layout at 320 CSS pixels.
+
+These are scoped regression checks, not full WCAG conformance or backend integration
+coverage. Actual screen-reader speech, authenticated mutation workflows, zoom/text
+spacing, forced colors, and mobile assistive technology remain untested. See the
+audit report for the separate authenticated browser review and remaining manual checks.
 
 ## Manually testing the publisher
 
@@ -323,7 +397,8 @@ where id = 'PASTE_TEST_DRAFT_ID';
 
 ### Trigger the route locally
 
-Use the HTTP method your route exports. If the route exports `POST`, an example PowerShell command is:
+The route supports `GET` for Vercel Cron and `POST` for manual checks. Replace
+`YOUR_CRON_SECRET` with your configured secret. In PowerShell:
 
 ```powershell
 $headers = @{
@@ -336,7 +411,15 @@ Invoke-RestMethod `
   -Headers $headers
 ```
 
-For production, use the HTTPS deployment URL:
+On macOS or Linux (bash/zsh):
+
+```bash
+curl --fail-with-body --request POST \
+  --header "Authorization: Bearer YOUR_CRON_SECRET" \
+  "http://localhost:3000/api/jobs/publish-due-drafts"
+```
+
+For production, use the HTTPS deployment URL. In PowerShell:
 
 ```powershell
 $headers = @{
@@ -347,6 +430,14 @@ Invoke-RestMethod `
   -Uri "https://YOUR-VERCEL-APP.vercel.app/api/jobs/publish-due-drafts" `
   -Method Post `
   -Headers $headers
+```
+
+On macOS or Linux (bash/zsh):
+
+```bash
+curl --fail-with-body --request POST \
+  --header "Authorization: Bearer YOUR_CRON_SECRET" \
+  "https://YOUR-VERCEL-APP.vercel.app/api/jobs/publish-due-drafts"
 ```
 
 After a successful run, verify:
