@@ -4,7 +4,7 @@ import { query, draftRow } from "./helpers/supabase";
 const { from, adminFrom } = vi.hoisted(() => ({ from: vi.fn(), adminFrom: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ from }) }));
 vi.mock("@/lib/supabase/admin", () => ({ supabaseAdmin: { from: adminFrom } }));
-import { createDraft, updateDraft, publishDueDrafts } from "@/lib/drafts";
+import { createDraft, deleteDraft, updateDraft, publishDueDrafts } from "@/lib/drafts";
 
 beforeEach(() => {
   from.mockReset(); adminFrom.mockReset();
@@ -21,6 +21,26 @@ function existing(overrides: Record<string, unknown> = {}) {
 }
 
 describe("draft workflow", () => {
+  it("deletes only the requested owner's draft using the session client", async () => {
+    const write = query({ data: { id: "draft-1" } });
+    from.mockReturnValue(write);
+    expect(await deleteDraft("draft-1", "user-1")).toBe(true);
+    expect(write.delete).toHaveBeenCalledOnce();
+    expect(write.eq).toHaveBeenCalledWith("id", "draft-1");
+    expect(write.eq).toHaveBeenCalledWith("owner_id", "user-1");
+    expect(adminFrom).not.toHaveBeenCalled();
+  });
+
+  it("does not report deletion when no accessible draft was removed", async () => {
+    from.mockReturnValue(query());
+    expect(await deleteDraft("missing", "user-1")).toBe(false);
+  });
+
+  it("surfaces deletion failures", async () => {
+    from.mockReturnValue(query({ error: { message: "database unavailable" } }));
+    await expect(deleteDraft("draft-1", "user-1")).rejects.toThrow("database unavailable");
+  });
+
   it("creates a user-owned draft and maps database fields", async () => {
     const insert = query({ data: draftRow }); from.mockReturnValue(insert);
     const draft = await createDraft(draftRow.topic, draftRow.content, "user-1");

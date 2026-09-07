@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthControls from "@/app/components/AuthControls";
 
@@ -68,11 +68,13 @@ function getEventLabel(event: DraftEvent) {
 export default function DraftEditorPage() {
   const params = useParams<{ id: string }>();
   const draftId = params.id;
+  const router = useRouter();
 
   const [draft, setDraft] = useState<Draft | null>(null);
   const [content, setContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [notice, setNotice] = useState({ text: "", type: "status" as "status" | "error" });
   const message = notice.text;
@@ -303,6 +305,29 @@ export default function DraftEditorPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!draft || isDeleting || isSaving || isApproving || isScheduling) return;
+
+    if (!window.confirm(
+      `Permanently delete "${draft.topic || "Untitled draft"}" and its activity history? This cannot be undone. Any pending schedule will be removed.`,
+    )) return;
+
+    setIsDeleting(true);
+    setMessage("Deleting draft...");
+    try {
+      const response = await fetch(`/api/drafts/${draft.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || "Could not delete the draft. Please try again.");
+      }
+      router.replace("/drafts");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not delete the draft. Please try again.", "error");
+      setIsDeleting(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <main className="page">
@@ -416,7 +441,7 @@ export default function DraftEditorPage() {
           value={content}
           onChange={(event) => handleContentChange(event.target.value)}
           rows={16}
-          readOnly={draft.status === "published"}
+          readOnly={draft.status === "published" || isDeleting}
         />
         {draft.status === "published" && (
           <section className="approval-note">
@@ -433,7 +458,7 @@ export default function DraftEditorPage() {
               type="button"
               className="secondary-button"
               onClick={saveChanges}
-              disabled={isSaving}
+              disabled={isSaving || isDeleting}
             >
               {isSaving ? "Saving..." : "Save changes"}
             </button>
@@ -442,7 +467,7 @@ export default function DraftEditorPage() {
               type="button"
               className="approve-button"
               onClick={approveDraft}
-              disabled={isApproving || draft.status === "approved"}
+              disabled={isApproving || isDeleting || draft.status === "approved"}
             >
               {draft.status === "approved"
                 ? "Approved"
@@ -474,7 +499,7 @@ export default function DraftEditorPage() {
                   type="button"
                   className="schedule-button"
                   onClick={scheduleDraft}
-                  disabled={isScheduling}
+                  disabled={isScheduling || isDeleting}
                 >
                   {isScheduling ? "Scheduling..." : "Schedule post"}
                 </button>
@@ -491,6 +516,14 @@ export default function DraftEditorPage() {
             )}
           </div>
         )}
+        <button
+          type="button"
+          className="delete-draft-button"
+          onClick={() => void handleDelete()}
+          disabled={isDeleting || isSaving || isApproving || isScheduling}
+        >
+          {isDeleting ? "Deleting..." : "Delete draft"}
+        </button>
         <p className="save-message live-message" role="status" aria-atomic="true">
           {notice.type === "status" ? message : ""}
         </p>

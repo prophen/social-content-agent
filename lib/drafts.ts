@@ -98,6 +98,23 @@ export async function getDraftById(id: string): Promise<Draft | undefined> {
   return data ? toDraft(data as DraftRow) : undefined;
 }
 
+export async function deleteDraft(id: string, ownerId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("drafts")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", ownerId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not delete draft: ${error.message}`);
+  }
+
+  return Boolean(data);
+}
+
 export async function updateDraft(
   id: string,
   updates: {

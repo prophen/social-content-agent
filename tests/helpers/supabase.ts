@@ -7,6 +7,7 @@ export function query(result: { data?: unknown; error?: { message: string } | nu
     select: vi.fn().mockReturnThis(),
     insert: vi.fn().mockReturnThis(),
     update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
     lte: vi.fn().mockReturnThis(),

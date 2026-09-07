@@ -1091,3 +1091,14 @@ button:disabled {
 .live-message:empty {
   margin: 0;
 }
+
+.delete-draft-button {
+  min-height: 44px;
+  color: #8a1c1c;
+  background: #fff0f0;
+  border: 1px solid #8a1c1c;
+}
+
+.delete-draft-button:hover:not(:disabled) {
+  background: #fbdada;
+}

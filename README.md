@@ -66,6 +66,8 @@ The OpenAI API key is never exposed to the browser.
 
 Users can edit generated content before saving. Saving updates the draft and records a draft-update event in the activity timeline.
 
+To remove a saved draft, open it and select **Delete draft**. Confirming permanently deletes the draft and its activity history, removes any pending schedule, and returns to the draft library. Users can only delete their own drafts.
+
 ### 4. Approve and schedule
 
 A draft must be approved before it can be scheduled. The user chooses a date and time, and the draft transitions to the `scheduled` status.

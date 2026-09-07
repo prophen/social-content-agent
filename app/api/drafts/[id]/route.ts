@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDraftById, updateDraft } from "@/lib/drafts";
+import { deleteDraft, getDraftById, updateDraft } from "@/lib/drafts";
 import { createClient } from "@/lib/supabase/server";
 import { createDraftEvent } from "@/lib/draftEvents";
 
@@ -48,6 +48,32 @@ export async function GET(_request: Request, { params }: RouteContext) {
 
     return NextResponse.json(
       { error: "Could not load the draft." },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  try {
+    const user = await requireUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "You must be signed in to delete drafts." },
+        { status: 401 },
+      );
+    }
+
+    const { id } = await params;
+    if (!(await deleteDraft(id, user.id))) {
+      return NextResponse.json({ error: "Draft not found." }, { status: 404 });
+    }
+
+    return new Response(null, { status: 204 });
+  } catch (error) {
+    console.error("Could not delete draft:", error);
+    return NextResponse.json(
+      { error: "Could not delete the draft. Please try again." },
       { status: 500 },
     );
   }
