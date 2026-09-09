@@ -13,6 +13,8 @@ The complete chain defines:
 
 ## Existing project
 
+The owner confirmed that `approved_at` already exists in the hosted database. This migration addresses the repository's schema history; it does not establish that production was missing the field. Check existing `updated_at` triggers before deciding whether to apply the complete migration to that project. A Git push alone does not run SQL migrations in Supabase.
+
 After earlier migrations are present, apply only `migrations/20260909010000_complete_draft_timestamps.sql`. In the Supabase SQL Editor, select the Social Content Agent project, paste that file's complete contents, and run it. Do not rerun the historical CREATE TABLE files against existing tables. If using a migration runner, use its normal applied-migration tracking.
 
 The repair adds nullable `drafts.approved_at` if absent, preserves pre-existing approval values, and installs `drafts_set_updated_at`. The trigger uses the current statement timestamp for future updates. It does not change other fields or fabricate historical approval dates. No blanket updates, record deletions, table recreation, or RLS changes are included.

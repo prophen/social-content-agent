@@ -196,6 +196,8 @@ Run migrations in filename order in a new Supabase project. Do not run table-cre
 
 ### Complete draft timestamps in an existing project
 
+The owner has confirmed that the hosted database already contains `approved_at`. The gap was in the checked-in migration history, not evidence of a missing live column. The migration below makes fresh database setup reproducible. Before applying it to the existing hosted project, inspect its timestamp triggers; an equivalent `updated_at` trigger may already exist. Pushing these files to GitHub does not itself apply them to Supabase.
+
 Apply [`20260909010000_complete_draft_timestamps.sql`](supabase/migrations/20260909010000_complete_draft_timestamps.sql) through your normal migration workflow, or run its complete contents in the Supabase SQL Editor for this application's project. Apply any earlier missing migrations first; do not rerun the original table-creation files on an existing schema.
 
 This forward migration adds the nullable `drafts.approved_at` column used by the application and installs a trigger that refreshes `drafts.updated_at` whenever a draft changes. A timestamp default alone only handles new rows. The trigger covers edits, approvals, schedules, and simulated publication, including server-side job updates.
