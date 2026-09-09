@@ -194,6 +194,16 @@ The schema should include:
 
 Run migrations in filename order in a new Supabase project. Do not run table-creation migrations against an existing project without first checking whether the tables and policies already exist.
 
+### Complete draft timestamps in an existing project
+
+Apply [`20260909010000_complete_draft_timestamps.sql`](supabase/migrations/20260909010000_complete_draft_timestamps.sql) through your normal migration workflow, or run its complete contents in the Supabase SQL Editor for this application's project. Apply any earlier missing migrations first; do not rerun the original table-creation files on an existing schema.
+
+This forward migration adds the nullable `drafts.approved_at` column used by the application and installs a trigger that refreshes `drafts.updated_at` whenever a draft changes. A timestamp default alone only handles new rows. The trigger covers edits, approvals, schedules, and simulated publication, including server-side job updates.
+
+Existing drafts and activity are retained. If `approved_at` was added manually, its values are preserved. If it was absent, existing rows receive NULL because their historical approval times are unknown. The migration does not manufacture those times or rewrite existing `updated_at` values. It runs in a transaction and requests a PostgREST schema-cache refresh on commit. The repair can be safely rerun.
+
+See [migration verification and application steps](supabase/MIGRATIONS.md). Local verification does not apply changes to the hosted Supabase database.
+
 ## Local setup
 
 ### Prerequisites
@@ -306,6 +316,8 @@ editing safeguards, simulated publication and activity recording, API authentica
 AI input validation and quota handling, and sign-in interactions. Supabase and OpenAI
 are mocked at their module boundaries; no environment file, live database, API key,
 or running development server is required.
+
+`tests/migrations.test.ts` additionally executes the actual SQL migration chain in an in-memory PGlite PostgreSQL database. Run it with `npm test -- tests/migrations.test.ts`. It checks required columns, real SQL writes, timestamp updates, constraints, draft ownership policies, and existing-schema upgrades. Minimal `auth.users`, `auth.uid()`, and an `authenticated` role stand in for Supabase's managed auth environment; this is not a full hosted Supabase integration test.
 
 Add server tests as `tests/**/*.test.ts`. Component tests use `tests/**/*.test.tsx`
 with a `// @vitest-environment jsdom` directive. Shared query fixtures live in
