@@ -1,4 +1,29 @@
-# Accessibility audit — 6 September 2026
+# Accessibility audit — 9 September 2026 follow-up
+
+The reported drafts-page hover issue is reproduced and fixed. This follow-up uses the existing regression runner, expanded to exercise computed browser styles in default, hover, selected, and keyboard-focus states.
+
+## Current findings and fixes
+
+1. **High — Unselected draft-filter hover text fails contrast (WCAG 1.4.3 AA).** The global `button:hover:not(:disabled)` selector overrode the background from `.draft-filter-button:hover`, while the filter rule changed the text to purple. Chromium measured #5b48d8 on #4837bc at **1.32:1**, below 4.5:1. The filter selector now includes `:not(:disabled)` and uses #4837bc on #dfe5ee at **6.51:1**. An explicit selected-hover rule preserves white on #4837bc at **8.24:1**. All six filters are exercised as selected controls as well.
+2. **Keyboard-focus improvement.** Added a consistent opaque, offset 3px outline for links, buttons, and fields. Existing custom field rules could suppress or dilute outlines; explicit field selectors ensure the new ring wins. This is a robustness improvement, not a claim that every previous browser-default outline failed WCAG.
+
+## Current verification and limits
+
+- The new hover assertion failed against the original stylesheet at 1.32:1 before the fix.
+- **139 computed contrast assertions pass**, including enabled links/buttons in default, hover, and focus states across the dashboard, draft/approved/scheduled editor, new draft, and brand voice, plus selected filters and preview text. Keyboard assertions check focus visibility; field assertions also check the opaque outline color.
+- Axe-core reports **zero violations across nine states**: sign-in, sign-up, approved editor with error, scheduled editor, populated dashboard, empty filtered dashboard, new draft after generation, brand voice, and sign-in error.
+- One axe incomplete check concerns the decorative arrow in “Open draft.” It is `aria-hidden`, duplicates the visible link label, and inherits the passing link colors (6.24:1 default, 8.24:1 hover). No other incomplete checks were returned.
+- Reflow checks pass at 320 CSS pixels for sign-up, draft editor, populated dashboard, new draft, and brand voice. The dashboard hover screenshot was visually inspected.
+- Existing keyboard-tab navigation, live-region persistence, validation associations, and notification checks still pass. ESLint passes.
+- The sign-in route runs through Next.js. Protected pages render actual components, including AuthControls, with mocked auth client, routing, and API data. No account, draft, or publishing data was changed. Authenticated integration, screen-reader speech, forced colors, zoom/text-spacing, and mobile assistive technology remain untested; this is not full WCAG conformance certification.
+
+Run `npm run test:a11y` against the local development server, using `A11Y_BASE_URL` for a nondefault port. Detailed colors/ratios and screenshots are regenerated under ignored `audit/results/`. The earlier setup instructions below still apply.
+
+Reference: [WCAG contrast minimum](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), including hover and focus text.
+
+---
+
+# Previous accessibility audit — 6 September 2026
 
 All four findings from the initial WCAG 2.2 A/AA oriented review have been addressed. This is a scoped audit, not a conformance certification.
 

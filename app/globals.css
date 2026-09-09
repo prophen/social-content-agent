@@ -713,8 +713,8 @@ button:disabled {
   border-radius: 999px;
 }
 
-.draft-filter-button:hover {
-  color: var(--primary);
+.draft-filter-button:hover:not(:disabled) {
+  color: var(--primary-hover);
   background: #dfe5ee;
 }
 
@@ -1076,6 +1076,11 @@ button:disabled {
   background: #dfe5ee;
 }
 
+.draft-filter-button.is-active:hover:not(:disabled) {
+  color: #fff;
+  background: var(--primary-hover);
+}
+
 .brand-voice-hint {
   margin: 0 0 10px;
   color: var(--muted-text);
@@ -1108,4 +1113,16 @@ button:disabled {
 
 .delete-draft-button:hover:not(:disabled) {
   background: #fbdada;
+}
+
+/* Offset the ring so it remains distinct from filled controls. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.auth-form input:focus-visible,
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
 }

@@ -19,9 +19,10 @@ for (const [name, pkg, file] of [
 ]) modules[name] = fs.readFileSync(path.join(path.dirname(require.resolve(`${pkg}/package.json`, { paths: [path.dirname(require.resolve('react-dom/package.json'))] })), 'cjs', file), 'utf8');
 modules['next/link'] = 'module.exports = {default: ({children,...props}) => require("react").createElement("a",props,children)};';
 modules['next/navigation'] = 'module.exports = { useParams: () => ({id:"fixture"}), useSearchParams: () => new URLSearchParams(), useRouter: () => ({push(){},replace(){},refresh(){}}) };';
-modules['@/lib/supabase/client'] = 'module.exports = {createClient: () => ({auth: {signInWithPassword: async () => ({error: window.authFailure ? new Error("Invalid fixture credentials") : null})}})};';
-modules['@/app/components/AuthControls'] = 'module.exports = {default: () => require("react").createElement("button",null,"Sign out")};';
-const results = { note: 'Authentication uses the real Next.js route. Protected UI uses actual page components with mocked router, auth controls and API responses in an isolated browser; no real account or draft changes.' };
+modules['@/lib/supabase/client'] = 'module.exports = {createClient: () => ({auth: {getUser: async () => ({data:{user:{id:"fixture"}}}), onAuthStateChange: () => ({data:{subscription:{unsubscribe(){}}}}), signInWithPassword: async () => ({error: window.authFailure ? new Error("Invalid fixture credentials") : null})}})};';
+modules['@/app/components/AuthControls'] = transpile('app/components/AuthControls.tsx');
+modules['@/lib/brandVoice'] = transpile('lib/brandVoice.ts');
+const results = { note: 'Authentication uses the real Next.js route. Protected UI uses actual page and auth-control components with mocked router, auth client and API responses in an isolated browser; no real account or draft changes.' };
 const date = '2026-09-06T12:00:00.000Z';
 const draft = { id: 'fixture', topic: 'Accessibility fixture', content: 'A short social post.', status: 'draft', createdAt: date, updatedAt: date, scheduledFor: null, publishedAt: null };
 function bundle(file) {
@@ -36,11 +37,57 @@ const luminance = hex => {
   const browser = await chromium.launch({headless:true});
   try {
     const page = await browser.newPage();
+    async function contrast(locator, label) {
+      const colors = await locator.evaluate(element => {
+        const style = getComputedStyle(element);
+        let background = style.backgroundColor;
+        for (let parent = element.parentElement; background === 'rgba(0, 0, 0, 0)' && parent; parent = parent.parentElement) {
+          background = getComputedStyle(parent).backgroundColor;
+        }
+        return {color: style.color, background};
+      });
+      const toHex = color => color.match(/[\d.]+/g).slice(0, 3).map(n => Number(n).toString(16).padStart(2, '0')).join('');
+      const values = [luminance(toHex(colors.color)), luminance(toHex(colors.background))].sort((a,b)=>b-a);
+      const ratio = (values[0]+.05)/(values[1]+.05);
+      results.buttonContrast ??= {};
+      results.buttonContrast[label] = {...colors, ratio: Number(ratio.toFixed(2))};
+      assert.ok(ratio >= 4.5, `${label}: ${ratio.toFixed(2)}:1 must meet 4.5:1`);
+    }
+    async function interactions(label) {
+      const controls = page.locator('button:enabled, a[href]');
+      for (let index = 0; index < await controls.count(); index++) {
+        const control = controls.nth(index);
+        const name = `${label}: ${(await control.innerText()).trim()}`;
+        await page.mouse.move(0, 0);
+        await contrast(control, `${name} default`);
+        await control.hover();
+        await contrast(control, `${name} hover`);
+        await page.mouse.move(0, 0);
+        await control.focus();
+        await page.keyboard.press('Tab');
+        await page.keyboard.press('Shift+Tab');
+        const focus = await control.evaluate(element => ({active: document.activeElement === element, visible: element.matches(':focus-visible'), style: getComputedStyle(element).outlineStyle, width: getComputedStyle(element).outlineWidth}));
+        assert.ok(focus.active && focus.visible && focus.style === 'solid' && parseFloat(focus.width) >= 3, `${name} keyboard focus`);
+        await contrast(control, `${name} focus`);
+      }
+      const inputs = page.locator('input:enabled, textarea:enabled');
+      for (let index = 0; index < await inputs.count(); index++) {
+        const input = inputs.nth(index);
+        await input.focus();
+        const ring = await input.evaluate(element => ({visible: element.matches(':focus-visible'), style: getComputedStyle(element).outlineStyle, width: getComputedStyle(element).outlineWidth, color: getComputedStyle(element).outlineColor}));
+        assert.ok(ring.visible && ring.style === 'solid' && parseFloat(ring.width) >= 3 && ring.color === 'rgb(91, 72, 216)', `${label} field focus`);
+      }
+    }
+    async function reflow(label) {
+      await page.setViewportSize({width:320,height:800});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),320, `${label} reflow`);
+      await page.setViewportSize({width:1280,height:900});
+    }
     async function axe(label) {
       await page.addScriptTag({path:require.resolve('axe-core')});
       const data = await page.evaluate(async () => {
         const r = await axe.run(document, {runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa','wcag22aa']}});
-        return {violations:r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),incomplete:r.incomplete.map(v=>v.id),passes:r.passes.length};
+        return {violations:r.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),incomplete:r.incomplete.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))})),passes:r.passes.length};
       });
       results[label]=data;
       assert.deepEqual(data.violations,[],label);
@@ -79,6 +126,7 @@ const luminance = hex => {
     await page.route('https://audit.test/**', async route => {
       const url = new URL(route.request().url());
       if(url.pathname.startsWith('/api/')) {
+        if(url.pathname === '/api/brand-voice') return route.fulfill({json:{name:'Fixture voice',audience:'Writers',tone:['Clear'],goals:[],avoid:[],formatRules:[],accuracyRules:[],callToActionStyle:'Ask a question'}});
         if (route.request().method()==='PATCH') {
           if(fail) return route.fulfill({status:500,json:{error:'Fixture failure'}});
           state={...state,...route.request().postDataJSON()};
@@ -95,6 +143,8 @@ const luminance = hex => {
     await page.setViewportSize({width:1280,height:900});
     await render('app/drafts/[id]/page.tsx');
     await page.getByRole('button',{name:'Save changes',exact:true}).waitFor();
+    await interactions('draftEditor');
+    await reflow('draftEditor');
     await page.evaluate(()=>{window.originalStatus=document.querySelector('.save-message[role=status]');window.originalAlert=document.querySelector('#editor-error');});
     await page.getByRole('button',{name:'Save changes',exact:true}).click();
     await page.locator('.save-message[role=status]').filter({hasText:'Changes saved.'}).waitFor();
@@ -115,14 +165,30 @@ const luminance = hex => {
     await page.getByRole('button',{name:'Schedule post',exact:true}).click();
     await page.getByRole('alert').filter({hasText:'Scheduling failed: Fixture failure'}).waitFor();
     await axe('approvedEditorWithError');
+    await interactions('approvedEditor');
     fail=false;
     await page.getByRole('button',{name:'Schedule post',exact:true}).click();
     await page.locator('.save-message[role=status]').filter({hasText:'Draft scheduled.'}).waitFor();
     assert.equal(await page.evaluate(()=>window.originalStatus===document.querySelector('.save-message[role=status]')&&window.originalAlert===document.querySelector('#editor-error')),true);
     results.editor='Save/approve/schedule success and failure update correct persistent regions; date validation is associated with its input.';
     await axe('scheduledEditor');
+    await interactions('scheduledEditor');
     await render('app/drafts/page.tsx');
     await page.getByRole('link',{name:'Open draft: Accessibility fixture',exact:true}).waitFor();
+    await axe('populatedDashboard');
+    await interactions('dashboard');
+    await contrast(page.locator('.draft-preview'), 'dashboard preview text');
+    await page.getByRole('button',{name:'Drafts',exact:true}).hover();
+    await page.screenshot({path:path.join(outputDirectory, 'drafts-hover.png'),fullPage:true});
+    await reflow('dashboard');
+    for (const name of ['All','Drafts','Approved','Scheduled','Published','Failed']) {
+      const filter = page.getByRole('button',{name,exact:true});
+      await filter.click();
+      assert.equal(await filter.getAttribute('aria-pressed'),'true');
+      await contrast(filter, `selected ${name} hover`);
+      await page.mouse.move(0,0);
+      await contrast(filter, `selected ${name} default`);
+    }
     await page.getByRole('button',{name:'Published',exact:true}).click();
     await page.getByRole('status').filter({hasText:'No published drafts yet.'}).waitFor();
     await axe('emptyFilteredDashboard');
@@ -137,6 +203,13 @@ const luminance = hex => {
     await page.getByRole('status').filter({hasText:'Draft generated.'}).waitFor();
     assert.equal(await page.getByLabel('Draft content',{exact:true}).inputValue(),'Generated fixture content.');
     await axe('newDraftAfterGeneration');
+    await interactions('newDraft');
+    await reflow('newDraft');
+    await render('app/brand-voice/page.tsx');
+    await page.getByLabel('Voice name',{exact:true}).fill('Changed fixture voice');
+    await axe('brandVoice');
+    await interactions('brandVoice');
+    await reflow('brandVoice');
     await render('app/sign-in/SignInForm.tsx');
     await page.getByLabel('Email address',{exact:true}).fill('fixture@example.com');
     await page.getByLabel('Password',{exact:true}).fill('fixture-password');
@@ -164,6 +237,6 @@ const luminance = hex => {
     }
     assert.equal(new Set(Object.values(results.titles)).size,4);
     fs.writeFileSync(path.join(outputDirectory, 'verification.json'),JSON.stringify(results,null,2));
-    console.log(JSON.stringify(results,null,2));
+    console.log(JSON.stringify({...results, buttonContrast: `${Object.keys(results.buttonContrast).length} contrast checks passed; see audit/results/verification.json for colors and ratios.`},null,2));
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});
